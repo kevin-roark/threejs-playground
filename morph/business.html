@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+    <meta charset="utf-8">
+		<title>morphing</title>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="../css/main.css" rel="stylesheet" />
+		<style>
+			#ctrl {
+				position: absolute;
+				top: 0px; left: 0px;
+        padding: 5px;
+				width: 200px;
+				color: #ffffff;
+				font-family: Monospace; font-size: 13px;
+				z-index: 100;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="ctrl">
+			Use controls to change morph target influences:<br/>
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 0 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 1 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 2 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 3 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 4 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 5 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 6 ] = this.value/100;" />
+			<input type="range" value="0" min="0" max="100" onchange="businessMan.morphTargetInfluences[ 7 ] = this.value/100;" />
+		</div>
+
+		<script src="../js/three-r77.js"></script>
+
+		<script>
+			var container, stats;
+
+			var camera, scene, renderer;
+
+			var businessMan;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+			init();
+			animate();
+
+			function init () {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 15000 );
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0x000000, 1, 15000 );
+
+				var light = new THREE.PointLight( 0xff2200 );
+				light.position.set( 100, 100, 100 );
+				scene.add( light );
+
+				var light = new THREE.AmbientLight( 0x111111 );
+				scene.add( light );
+
+        var loader = new THREE.JSONLoader();
+				loader.load('../models/business_prof.json', function( geometry, materials ) {
+          materials.forEach(function(material) {
+            material.transparent = false;
+            material.morphTargets = true;
+          });
+
+          // construct blend shapes
+  				for ( var i = 0; i < 8; i ++ ) {
+  					var vertices = [];
+  					for ( var v = 0; v < geometry.vertices.length; v ++ ) {
+              var vertex = geometry.vertices[v].clone();
+              if (v <= (i + 1) * geometry.vertices.length / 8) {
+                vertex.x *=  Math.random() - 0.5;
+                vertex.y *= Math.random() - 0.5;
+                vertex.z *= Math.random() - 0.5;
+              }
+              vertices.push(vertex);
+  					}
+  					geometry.morphTargets.push( { name: "target" + i, vertices: vertices } );
+  				}
+
+          var material = new THREE.MultiMaterial( materials );
+      		var object = new THREE.Mesh( geometry, material );
+          object.scale.set(150, 150, 150);
+          object.position.y = -120;
+
+          console.log(object);
+					scene.add(object);
+
+          businessMan = object;
+				});
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0x222222 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.sortObjects = false;
+				container.appendChild( renderer.domElement );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize () {
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function onDocumentMouseMove (event) {
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY ) * 2;
+			}
+
+			function animate () {
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render () {
+				if (businessMan) businessMan.rotation.y += 0.01;
+
+				//mesh.morphTargetInfluences[ 0 ] = Math.sin( mesh.rotation.y ) * 0.5 + 0.5;
+
+				//camera.position.x += ( mouseX - camera.position.x ) * .005;
+				//camera.position.y += ( - mouseY - camera.position.y ) * .01;
+
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>
