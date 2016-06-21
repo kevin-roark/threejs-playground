@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+    <meta charset="utf-8">
+		<title>morphing</title>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="../css/main.css" rel="stylesheet" />
+		<style>
+			#ctrl {
+				position: absolute;
+				top: 0px; left: 0px;
+        padding: 5px;
+				width: 200px;
+				color: #ffffff;
+				font-family: Monospace; font-size: 13px;
+				z-index: 100;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="ctrl">
+			Use controls to change morph target influences:<br/>
+		</div>
+
+		<script src="../js/three-r77.js"></script>
+
+		<script>
+			var container, stats;
+
+			var camera, scene, renderer;
+
+			var face;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+      var ctrl = document.getElementById('ctrl');
+      for (var i = 0; i < 100; i++) {
+        makeInput(i);
+      }
+      function makeInput(i) {
+        var input = document.createElement('input');
+        input.type = 'range';
+        input.value = 0;
+        input.min = 0;
+        input.max = 100;
+        input.oninput = function() {
+          if (!face) return;
+          face.morphTargetInfluences[i] = input.value / 100;
+        };
+
+        ctrl.appendChild(input);
+      }
+
+			init();
+			animate();
+      setInterval(function glitchFace() {
+        if (!face) return;
+
+        for (var i = 0; i < 10; i++) {
+          var m = Math.floor(Math.random() * 101);
+          face.morphTargetInfluences[m] = Math.random();
+        }
+      }, 100);
+
+			function init () {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 15000 );
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0x000000, 1, 15000 );
+
+				var light = new THREE.PointLight( 0xff2200 );
+				light.position.set( 100, 100, 100 );
+				scene.add( light );
+
+				var light = new THREE.AmbientLight( 0x111111 );
+				scene.add( light );
+
+        var loader = new THREE.JSONLoader();
+				loader.load('../models/prof-with-blend-2.json', function( geometry, materials ) {
+          var material;
+          if (materials) {
+            materials.forEach(function(material) {
+              material.transparent = false;
+              material.morphTargets = true;
+            });
+
+            material = new THREE.MultiMaterial( materials );
+          } else {
+            material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+          }
+
+      		var object = new THREE.Mesh( geometry, material );
+          object.scale.set(1.5, 1.5, 1.5);
+          object.position.set(0, -240, 300);
+
+          console.log(object);
+					scene.add(object);
+
+          face = object;
+				});
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0x222222 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.sortObjects = false;
+				container.appendChild( renderer.domElement );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function onWindowResize () {
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function onDocumentMouseMove (event) {
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY ) * 2;
+			}
+
+			function animate () {
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render () {
+				//mesh.morphTargetInfluences[ 0 ] = Math.sin( mesh.rotation.y ) * 0.5 + 0.5;
+
+				//camera.position.x += ( mouseX - camera.position.x ) * .005;
+				//camera.position.y += ( - mouseY - camera.position.y ) * .01;
+
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>
